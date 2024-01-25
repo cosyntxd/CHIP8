@@ -1,5 +1,5 @@
 [package]
-name = "chip_8"
+name = "chip8"
 version = "0.1.0"
 edition = "2021"
 license = "Unlicense"
@@ -7,11 +7,6 @@ license = "Unlicense"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pixels = "0.11"
-winit = "0.27"
-
-[profile.release]
-lto = true
-strip = true
-panic = "abort"
-opt-level = 3
+fastrand = "2.0"
+pixels = "0.13"
+winit = "0.27" # https://github.com/parasyte/pixels/issues/379
