@@ -3,8 +3,8 @@ use std::{
     fs::File, io::{Error, Read}, ops::Index, path::PathBuf
 };
 use winit::event::{ElementState, Event, VirtualKeyCode as VKC, WindowEvent};
-use crate::{font::FONT_SET};
-
+use opcode_macros::opcode_handler;
+use crate::font::FONT_SET;
 
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 32;
@@ -113,12 +113,10 @@ impl Chip8Interpreter {
             }
         }
     }
-
     pub fn execute_cycle(&mut self, pixels: &mut [u8]) {
         if !self.should_execute {
             return;
         }
-        // TODO
         self.update_timer(1.0/60.0);
 
         let opcode = {
@@ -133,39 +131,6 @@ impl Chip8Interpreter {
     }
 }
 
-macro_rules! opcode_equals {
-    ($opcode:expr, $pattern:expr) => {
-        {
-            // Convert pattern to hex with wildcards zeroed
-            let match_operation = u16::from_str_radix(&$pattern
-                .replace("x", "0")
-                .replace("y", "0")
-                .replace("k", "0")
-                .replace("n", "0"), 16)
-                .unwrap();
-            // Create a bitmask for all non wildcards
-            let mut match_mask = 0;
-            for (i,c) in $pattern.chars().rev().enumerate() {
-                if !matches!(c, 'x' | 'y' | 'k' | 'n') {
-                    match_mask += 0b1111 << i * 4
-                }
-            }
-            // Compares opcodes when wildcards have been zeroed
-            $opcode & match_mask == match_operation
-        }
-    };
-}
-macro_rules! opcode_handler {
-    ($opcode:expr, $($pattern:literal => $code:block),+) => {
-        match true {
-            $(
-                true if opcode_equals!($opcode, $pattern) => $code
-            )*
-            _ => {panic!("Unknown opcode: {:#4x}",$opcode)}
-        }
-    };
-
-}
 impl Chip8Interpreter {
     fn handle_opcode(&mut self, opcode: u16, pixels: &mut [u8]) {
         let x = ((opcode & 0x0F00) >> 8) as usize;
@@ -174,7 +139,7 @@ impl Chip8Interpreter {
         let address = opcode & 0x07FF;
         let nimble = opcode & 0x000F;
 
-        opcode_handler!(opcode,
+        opcode_handler!(opcode
             "00e0" => {
                 self.clear_display(pixels)
             },
@@ -309,8 +274,7 @@ impl Chip8Interpreter {
                 let mem = &mut self.memory[address as usize..address as usize + x as usize];
                 self.registers[0..x as usize].copy_from_slice(&mem);
                 self.address += (x + 1) as u16;
-            }
-
+            },
         );
         // println!("{opcode:x} {:?}", (self.registers, self.address, self.program_counter, &self.stack, self.vram))
     }

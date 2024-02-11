@@ -6,10 +6,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-mod chip8;
-mod font;
-
-use chip8::{Chip8Interpreter, HEIGHT, WIDTH};
+use chip8::chip8::{Chip8Interpreter, HEIGHT, WIDTH};
 
 fn main() {
     let (width, height) = (WIDTH as u32, HEIGHT as u32);
