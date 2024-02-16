@@ -73,6 +73,8 @@ fn main() {
             }
             Event::RedrawRequested(_) => {
                 interpreter.execute_cycle(surface.frame_mut());
+                interpreter.draw_pixels(surface.frame_mut());
+
                 if let Err(e) = surface.render() {
                     println!("{e}");
                     control_flow.set_exit();

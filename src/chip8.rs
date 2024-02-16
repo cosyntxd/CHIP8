@@ -94,12 +94,20 @@ impl Chip8Interpreter {
                 let color = (self.memory[self.address as usize + byte as usize] >> (7 - bit)) & 1;
                 self.registers[0x0f] |= color & self.vram[y * WIDTH + x];
                 self.vram[y * WIDTH + x] ^= color;
+            }
+        }
+    }
+    pub fn draw_pixels(&mut self, pixels: &mut [u8]) {
+        debug_assert!(pixels.len() == HEIGHT * WIDTH * 4);
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
                 let state = match self.vram[y * WIDTH + x] {
                     0 => PIXEL_OFF,
                     1 => PIXEL_ON,
                     _ => unreachable!(),
                 };
-                _pixels[(y * WIDTH + x) * 4..(y * WIDTH + x) * 4 + 4].copy_from_slice(&state);
+                let index = (y * WIDTH + x) * 4;
+                pixels[index..index+4].copy_from_slice(&state);
             }
         }
     }
