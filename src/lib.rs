@@ -1,2 +1,3 @@
 pub mod chip8;
-mod font;
+pub mod font;
+pub mod window;
