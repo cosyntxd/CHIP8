@@ -4,6 +4,7 @@ use winit::event::{Event, WindowEvent};
 fn main() {
     let window = Chip8Window::new();
     let mut interpreter = Chip8Interpreter::new();
+
     window.run(move |event, pixels| {
         interpreter.process_keys(event);
         if let Event::WindowEvent {event: WindowEvent::DroppedFile(path) ,..} = event {
@@ -15,6 +16,8 @@ fn main() {
         if let Event::RedrawRequested(_) = event {
             interpreter.execute_cycle(pixels);
             interpreter.draw_pixels(pixels);
+            return interpreter.should_beep()
         }
+        return false;
     });
 }

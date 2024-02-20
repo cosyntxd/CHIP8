@@ -31,7 +31,8 @@ pub struct Chip8Interpreter {
     sound_timer: u8,
     should_execute: bool,
     keyboard: [bool; 16],
-    pub total_dt: f32,
+    total_dt: f32,
+    total_dt2: f32,
     beep: bool,
 }
 impl Chip8Interpreter {
@@ -50,9 +51,10 @@ impl Chip8Interpreter {
             vram: [0; WIDTH * HEIGHT],
             rng: Rng::new(),
             should_execute: false,
-            keyboard: [true; 16],
+            keyboard: [false; 16],
             beep: false,
             total_dt: 0.0,
+            total_dt2: 0.0,
         }
     }
     // Gets keyboard events from winit's eventloop, only processing the keys listed in `CONTROLS`
@@ -70,6 +72,9 @@ impl Chip8Interpreter {
                 }
             }
         }
+    }
+    pub fn should_beep(&self) -> bool {
+        self.sound_timer > 0
     }
     // Given a path to a file, load it into memory and execute it
     pub fn load_rom(&mut self, f: PathBuf) -> Result<(), Error> {
@@ -120,6 +125,15 @@ impl Chip8Interpreter {
                 self.delay_timer = self.delay_timer.wrapping_sub(1);
             }
         }
+        if self.sound_timer > 0 {
+            self.total_dt2 += dt;
+            const TIMER_PERIOD: f32 = 1.0 / 60.0;
+            while self.total_dt2 > TIMER_PERIOD {
+                self.total_dt2 -= TIMER_PERIOD;
+                self.sound_timer = self.sound_timer.wrapping_sub(1);
+            }
+        }
+        
     }
     pub fn execute_cycle(&mut self, pixels: &mut [u8]) {
         if !self.should_execute {
@@ -244,7 +258,6 @@ impl Chip8Interpreter {
                     self.program_counter += 2;
                 }
             },
-            // No audio yet
             "Fx07" => {
                 self.registers[x] = self.delay_timer;
             },
@@ -282,7 +295,7 @@ impl Chip8Interpreter {
                 let mem = &mut self.memory[address as usize..address as usize + x as usize];
                 self.registers[0..x as usize].copy_from_slice(&mem);
                 self.address += (x + 1) as u16;
-            },
+            }
         );
         // println!("{opcode:x} {:?}", (self.registers, self.address, self.program_counter, &self.stack, self.vram))
     }
