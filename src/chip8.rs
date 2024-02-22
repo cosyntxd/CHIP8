@@ -171,7 +171,7 @@ impl Chip8Interpreter {
                 self.registers[x] = byte as u8;
             },
             "7xkk" => {
-                self.registers[x] += byte as u8;
+                self.registers[x] = self.registers[x].wrapping_add(byte as u8);
             },
             "8xy0" => {
                 self.registers[x] = self.registers[y];
