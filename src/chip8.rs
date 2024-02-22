@@ -1,8 +1,7 @@
 use fastrand::Rng;
 use std::{
-    fs::File, io::{Error, Read}, ops::Index, path::PathBuf
+    fs::File, io::{Error, Read}, path::PathBuf
 };
-use winit::event::{ElementState, Event, VirtualKeyCode as VKC, WindowEvent};
 use opcode_macros::opcode_handler;
 use crate::font::FONT_SET;
 
@@ -12,19 +11,12 @@ pub const HEIGHT: usize = 32;
 const PIXEL_ON: &[u8] = &[255, 255, 255, 255];
 const PIXEL_OFF: &[u8] = &[0, 0, 0, 255];
 
-const CONTROLS: [VKC; 16] = [
-    VKC::Key1,  VKC::Key2,  VKC::Key3,  VKC::Key4,
-    VKC::Q,     VKC::W,     VKC::E,     VKC::R,
-    VKC::A,     VKC::S,     VKC::D,     VKC::F,
-    VKC::Z,     VKC::X,     VKC::C,     VKC::V,
-];
 pub struct Chip8Interpreter {
     memory: [u8; 4096],
     registers: [u8; 16],
     address: u16,
     program_counter: u16,
     stack: Vec<u16>,
-    stack_ptr: usize,
     rng: Rng,
     vram: [u8; WIDTH * HEIGHT],
     delay_timer: u8,
@@ -33,7 +25,6 @@ pub struct Chip8Interpreter {
     keyboard: [bool; 16],
     total_dt: f32,
     total_dt2: f32,
-    beep: bool,
 }
 impl Chip8Interpreter {
     pub fn new() -> Self {
@@ -41,7 +32,6 @@ impl Chip8Interpreter {
         mem[..FONT_SET.len()].copy_from_slice(&FONT_SET);
         Self {
             memory: mem,
-            stack_ptr: 0,
             registers: [0; 16],
             address: 0,
             program_counter: 0x200,
@@ -52,45 +42,30 @@ impl Chip8Interpreter {
             rng: Rng::new(),
             should_execute: false,
             keyboard: [false; 16],
-            beep: false,
             total_dt: 0.0,
             total_dt2: 0.0,
         }
     }
-    // Gets keyboard events from winit's eventloop, only processing the keys listed in `CONTROLS`
-    // Maps the keys to an index in `self.keyboard` and sets it to the state of the key
-    pub fn process_keys(&mut self, event: &Event<()>) {
-        if let Event::WindowEvent { event, .. } = event {
-            if let WindowEvent::KeyboardInput { input, .. } = event {
-                if let Some(key) = input.virtual_keycode {
-                    if let Some(position) = CONTROLS.iter().position(|k| k == &key) {
-                        self.keyboard[position] = match input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                }
-            }
-        }
+    pub fn update_key(&mut self, position: usize, state: bool) {
+        self.keyboard[position] = state;
     }
     pub fn should_beep(&self) -> bool {
         self.sound_timer > 0
     }
     // Given a path to a file, load it into memory and execute it
     pub fn load_rom(&mut self, f: PathBuf) -> Result<(), Error> {
+        *self = Self::new();
         let mut file = File::open(f)?;
         file.read(&mut self.memory[0x200..])?;
         self.should_execute = true;
         Ok(())
     }
 
-    pub fn clear_display(&mut self, pixels: &mut [u8]) {
-        for pixel in pixels.chunks_exact_mut(4) {
-            pixel[0..4].copy_from_slice(&PIXEL_OFF);
-        }
+    pub fn clear_display(&mut self) {
+        self.vram = [0; WIDTH * HEIGHT];
     }
 
-    pub fn draw_sprite(&mut self, x: usize, y: usize, n: u16, _pixels: &mut [u8]) {
+    pub fn draw_sprite(&mut self, x: usize, y: usize, n: u16) {
         self.registers[0xf] = 0;
         for byte in 0..n {
             let y = (self.registers[y as usize] as usize + byte as usize) % HEIGHT;
@@ -135,7 +110,7 @@ impl Chip8Interpreter {
         }
         
     }
-    pub fn execute_cycle(&mut self, pixels: &mut [u8]) {
+    pub fn execute_cycle(&mut self) {
         if !self.should_execute {
             return;
         }
@@ -148,13 +123,13 @@ impl Chip8Interpreter {
         };
         self.program_counter += 2;
         
-        self.handle_opcode(opcode, pixels);
+        self.handle_opcode(opcode);
 
     }
 }
 
 impl Chip8Interpreter {
-    fn handle_opcode(&mut self, opcode: u16, pixels: &mut [u8]) {
+    fn handle_opcode(&mut self, opcode: u16) {
         let x = ((opcode & 0x0F00) >> 8) as usize;
         let y = ((opcode & 0x00F0) >> 4) as usize;
         let byte = opcode & 0x00FF;
@@ -163,7 +138,7 @@ impl Chip8Interpreter {
 
         opcode_handler!(opcode
             "00e0" => {
-                self.clear_display(pixels)
+                self.clear_display()
             },
             "00ee" => {
                 if let Some(adr) = self.stack.pop() {
@@ -246,7 +221,7 @@ impl Chip8Interpreter {
                 self.registers[x] = self.rng.u8(0..255) & byte as u8;
             },
             "Dxyn" => {
-                self.draw_sprite(x, y, nimble, pixels);
+                self.draw_sprite(x, y, nimble);
             },
             "Ex9E" => {
                 if self.keyboard[self.registers[x] as usize] {
@@ -263,7 +238,7 @@ impl Chip8Interpreter {
             },
             "Fx0A" => {
                 // TODO: use keydown event and make nicer
-                if (self.keyboard.iter().any(|x| *x)) {
+                if self.keyboard.iter().any(|x| *x) {
                     self.registers[x as usize] = self.keyboard.iter().position(|x| *x).unwrap() as u8;
                 } else {
                     self.program_counter -= 2;
