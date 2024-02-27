@@ -1,9 +1,11 @@
-use fastrand::Rng;
-use std::{
-    fs::File, io::{Error, Read}, path::PathBuf
-};
-use opcode_macros::opcode_handler;
 use crate::font::FONT_SET;
+use fastrand::Rng;
+use opcode_macros::opcode_handler;
+use std::{
+    fs::File,
+    io::{Error, Read},
+    path::PathBuf,
+};
 
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 32;
@@ -68,9 +70,9 @@ impl Chip8Interpreter {
     pub fn draw_sprite(&mut self, x: usize, y: usize, n: u16) {
         self.registers[0xf] = 0;
         for byte in 0..n {
-            let y = (self.registers[y as usize] as usize + byte as usize) % HEIGHT;
+            let y = (self.registers[y] as usize + byte as usize) % HEIGHT;
             for bit in 0..8 {
-                let x = (self.registers[x as usize] as usize + bit) % WIDTH;
+                let x = (self.registers[x] + bit) as usize % WIDTH;
                 let color = (self.memory[self.address as usize + byte as usize] >> (7 - bit)) & 1;
                 self.registers[0x0f] |= color & self.vram[y * WIDTH + x];
                 self.vram[y * WIDTH + x] ^= color;
@@ -87,34 +89,32 @@ impl Chip8Interpreter {
                     _ => unreachable!(),
                 };
                 let index = (y * WIDTH + x) * 4;
-                pixels[index..index+4].copy_from_slice(&state);
+                pixels[index..index + 4].copy_from_slice(&state);
             }
         }
     }
-    fn update_timer(&mut self, dt: f32) {
+    fn update_timer(&mut self) {
+        const TIMER_PERIOD: f32 = 1.0 / 60.0;
         if self.delay_timer > 0 {
-            self.total_dt += dt;
-            const TIMER_PERIOD: f32 = 1.0 / 60.0;
+            self.total_dt += TIMER_PERIOD;
             while self.total_dt > TIMER_PERIOD {
                 self.total_dt -= TIMER_PERIOD;
                 self.delay_timer = self.delay_timer.wrapping_sub(1);
             }
         }
         if self.sound_timer > 0 {
-            self.total_dt2 += dt;
-            const TIMER_PERIOD: f32 = 1.0 / 60.0;
+            self.total_dt2 += TIMER_PERIOD;
             while self.total_dt2 > TIMER_PERIOD {
                 self.total_dt2 -= TIMER_PERIOD;
                 self.sound_timer = self.sound_timer.wrapping_sub(1);
             }
         }
-        
     }
     pub fn execute_cycle(&mut self) {
         if !self.should_execute {
             return;
         }
-        self.update_timer(1.0/60.0);
+        self.update_timer();
 
         let opcode = {
             let location = self.program_counter as usize;
@@ -122,9 +122,8 @@ impl Chip8Interpreter {
             u16::from_be_bytes(mem)
         };
         self.program_counter += 2;
-        
-        self.handle_opcode(opcode);
 
+        self.handle_opcode(opcode);
     }
 }
 

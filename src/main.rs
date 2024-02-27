@@ -13,11 +13,12 @@ fn main() {
     let mut interpreter = Chip8Interpreter::new();
     let mut iterations = 1;
     window.run(move |event, pixels| {
-        if let Event::WindowEvent {event: WindowEvent::DroppedFile(path) ,..} = event {
+        if let Event::WindowEvent { event: WindowEvent::DroppedFile(path), .. } = event {
             if let Err(e) = interpreter.load_rom(path.to_path_buf()) {
                 println!("Could not load ROM: {e}");
             }
         }
+
         if let Event::WindowEvent { event, .. } = event {
             if let WindowEvent::KeyboardInput { input, .. } = event {
                 if let Some(key) = input.virtual_keycode {
@@ -28,22 +29,23 @@ fn main() {
                         };
                         interpreter.update_key(position, state);
                     } else {
-                        if (key == VKC::Minus) && iterations > 0{
+                        if (key == VKC::Minus) && iterations > 0 {
                             iterations -= 1;
                         }
-                        if (key == VKC::Equals) && iterations < 1000{
+                        if (key == VKC::Equals) && iterations < 1000 {
                             iterations += 1;
                         }
                     }
                 }
             }
         }
+        
         if let Event::RedrawRequested(_) = event {
             for _ in 0..iterations {
                 interpreter.execute_cycle();
             }
             interpreter.draw_pixels(pixels);
-            return interpreter.should_beep()
+            return interpreter.should_beep();
         }
         return false;
     });

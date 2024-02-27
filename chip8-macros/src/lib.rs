@@ -11,9 +11,8 @@ impl OperationMatches {
         let mut match_operation = 0;
         for c in hex.chars() {
             match_operation *= 16;
-            match c.to_digit(16) {
-                Some(digit) => match_operation += digit as u16,
-                None => {},
+            if let Some(digit) = c.to_digit(16) {
+                match_operation += digit as u16;
             }
         }
         let mut match_mask = 0;
@@ -33,7 +32,7 @@ impl OperationMatches {
         let oper = self.opcode;
         let func = &self.operation;
         quote! {
-            true if (#operation & #mask == #oper) => {
+            if (#operation & #mask == #oper) {
                 #func;
                 return;
             }
@@ -47,8 +46,8 @@ struct OperationsHolder {
 impl Parse for OperationsHolder {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let opcode = input.parse()?;
-
         let mut match_arms = vec![];
+        
         while let Ok(arm) = input.parse::<Arm>() {
             if let Pat::Lit(lit) = arm.pat {
                 if let Lit::Str(hex) = lit.lit {
@@ -71,10 +70,7 @@ impl OperationsHolder {
             .map(|c| c.generate(op))
             .collect::<Vec<proc_macro2::TokenStream>>();
         quote! {
-            match true {
-                #(#arms),*
-                _ => {}
-            }
+            #(#arms)*
         }
     }
 }

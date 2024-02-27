@@ -55,10 +55,11 @@ impl Chip8Window {
         F: 'static + FnMut(&Event<'_, ()>, &mut [u8]) -> bool,
     {
         self.event_loop.run(move |event, _, control_flow| {
-            if let Event::WindowEvent {event: WindowEvent::CloseRequested, ..} = event {
+            if let Event::WindowEvent { event: WindowEvent::CloseRequested, .. } = event {
                 control_flow.set_exit();
             }
-            if let Event::WindowEvent {event: WindowEvent::Resized(size), ..} = event {
+            
+            if let Event::WindowEvent { event: WindowEvent::Resized(size), .. } = event {
                 self.surface
                     .resize_surface(size.width, size.height)
                     .expect("Could not resize surface");
@@ -71,10 +72,14 @@ impl Chip8Window {
                 }
                 self.window.request_redraw();
             }
-            let beep = func(&event, &mut self.surface.frame_mut()); 
+
+            let beep = func(&event, &mut self.surface.frame_mut());
             if beep {
                 let source = rodio::source::SineWave::new(400);
-                rodio::play_raw(&self.audio, source.take_duration(std::time::Duration::from_millis(16)));
+                rodio::play_raw(
+                    &self.audio,
+                    source.take_duration(std::time::Duration::from_millis(16)),
+                );
             }
         });
     }
