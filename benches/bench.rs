@@ -1,13 +1,18 @@
-use std::path::PathBuf;
-
+use std::{path::PathBuf, time::Duration};
+use std::fs;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
 fn general_bench(c: &mut Criterion) {
-    bench_app(c, "Space Invaders [David Winter].ch8");
+    for path in fs::read_dir("roms").unwrap() {
+        if let Ok(entry) = path {
+            if entry.path().extension().unwrap() == "ch8" {
+                bench_app(c, entry.path());
+            }
+        }
+    }
 }
-fn bench_app(c: &mut Criterion, name: &str) {
-    let path = PathBuf::new().join("roms").join(name);
-    c.bench_function(&format!("{name}  |  100k iterations"), |f| {
+fn bench_app(c: &mut Criterion, path: PathBuf) {
+    c.bench_function(path.to_str().unwrap(), |f| {
         f.iter_batched(
             || {
                 let mut interpreter = chip8::chip8::Chip8Interpreter::new();
@@ -24,5 +29,11 @@ fn bench_app(c: &mut Criterion, name: &str) {
     });
 }
 
-criterion_group!(benches, general_bench);
+criterion_group!(
+    name = benches;
+    config = Criterion::default()
+        .warm_up_time(Duration::from_secs(1))
+        .measurement_time(Duration::from_secs(5));
+    targets = general_bench
+);
 criterion_main!(benches);
