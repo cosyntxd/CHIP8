@@ -18,15 +18,16 @@ pub struct Chip8Interpreter {
     registers: [u8; 16],
     address: u16,
     program_counter: u16,
-    stack: Vec<u16>,
+    stack: [u16; 16],
+    stack_ptr: usize,
     rng: Rng,
-    vram: [u8; WIDTH * HEIGHT],
+    vram: [bool; WIDTH * HEIGHT],
     delay_timer: u8,
     sound_timer: u8,
     should_execute: bool,
     keyboard: [bool; 16],
-    total_dt: f32,
-    total_dt2: f32,
+    total_dt: u16,
+    total_dt2: u16,
 }
 impl Chip8Interpreter {
     pub fn new() -> Self {
@@ -37,15 +38,16 @@ impl Chip8Interpreter {
             registers: [0; 16],
             address: 0,
             program_counter: 0x200,
-            stack: vec![],
+            stack: [0; 16],
+            stack_ptr: 0,
             delay_timer: 0,
             sound_timer: 0,
-            vram: [0; WIDTH * HEIGHT],
+            vram: [false; WIDTH * HEIGHT],
             rng: Rng::new(),
             should_execute: false,
             keyboard: [false; 16],
-            total_dt: 0.0,
-            total_dt2: 0.0,
+            total_dt: 0,
+            total_dt2: 0,
         }
     }
     pub fn update_key(&mut self, position: usize, state: bool) {
@@ -64,18 +66,18 @@ impl Chip8Interpreter {
     }
 
     pub fn clear_display(&mut self) {
-        self.vram = [0; WIDTH * HEIGHT];
+        self.vram = [false; WIDTH * HEIGHT];
     }
 
-    pub fn draw_sprite(&mut self, x: usize, y: usize, n: u16) {
+    pub fn draw_sprite(&mut self, x: usize, y: usize, n: usize) {
         self.registers[0xf] = 0;
         for byte in 0..n {
-            let y = (self.registers[y] as usize + byte as usize) % HEIGHT;
+            let y = (self.registers[y] as usize + byte) % HEIGHT;
             for bit in 0..8 {
                 let x = (self.registers[x] + bit) as usize % WIDTH;
-                let color = (self.memory[self.address as usize + byte as usize] >> (7 - bit)) & 1;
-                self.registers[0x0f] |= color & self.vram[y * WIDTH + x];
-                self.vram[y * WIDTH + x] ^= color;
+                let color = (self.memory[self.address as usize + byte] >> (7 - bit)) & 1;
+                self.registers[0x0f] |= color & self.vram[y * WIDTH + x] as u8;
+                self.vram[y * WIDTH + x] ^= color != 0;
             }
         }
     }
@@ -84,17 +86,16 @@ impl Chip8Interpreter {
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
                 let state = match self.vram[y * WIDTH + x] {
-                    0 => PIXEL_OFF,
-                    1 => PIXEL_ON,
-                    _ => unreachable!(),
+                    true => PIXEL_ON,
+                    false => PIXEL_OFF,
                 };
                 let index = (y * WIDTH + x) * 4;
                 pixels[index..index + 4].copy_from_slice(&state);
             }
         }
     }
-    fn update_timer(&mut self) {
-        const TIMER_PERIOD: f32 = 1.0 / 60.0;
+    pub fn update_timer(&mut self) {
+        const TIMER_PERIOD: u16 = 1;
         if self.delay_timer > 0 {
             self.total_dt += TIMER_PERIOD;
             while self.total_dt > TIMER_PERIOD {
@@ -128,7 +129,7 @@ impl Chip8Interpreter {
 }
 
 impl Chip8Interpreter {
-    fn handle_opcode(&mut self, opcode: u16) {
+    pub fn handle_opcode(&mut self, opcode: u16) {
         let x = ((opcode & 0x0F00) >> 8) as usize;
         let y = ((opcode & 0x00F0) >> 4) as usize;
         let byte = opcode & 0x00FF;
@@ -140,15 +141,15 @@ impl Chip8Interpreter {
                 self.clear_display()
             },
             "00ee" => {
-                if let Some(adr) = self.stack.pop() {
-                    self.program_counter = adr
-                }
+                self.stack_ptr -= 1;
+                self.program_counter = self.stack[self.stack_ptr];
             },
             "1nnn" => {
                 self.program_counter = address;
             },
             "2nnn" => {
-                self.stack.push(self.program_counter);
+                self.stack[self.stack_ptr] = self.program_counter;
+                self.stack_ptr += 1;
                 self.program_counter = address;
             },
             "3xkk" => {
@@ -220,7 +221,7 @@ impl Chip8Interpreter {
                 self.registers[x] = self.rng.u8(0..255) & byte as u8;
             },
             "Dxyn" => {
-                self.draw_sprite(x, y, nimble);
+                self.draw_sprite(x, y, nimble as usize);
             },
             "Ex9E" => {
                 if self.keyboard[self.registers[x] as usize] {
@@ -271,6 +272,5 @@ impl Chip8Interpreter {
                 self.address += (x + 1) as u16;
             }
         );
-        // println!("{opcode:x} {:?}", (self.registers, self.address, self.program_counter, &self.stack, self.vram))
     }
 }
