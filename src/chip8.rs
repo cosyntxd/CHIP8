@@ -28,6 +28,8 @@ pub struct Chip8Interpreter {
     keyboard: [bool; 16],
     total_dt: u16,
     total_dt2: u16,
+    debug: u8,
+    debug_iter: u32,
 }
 impl Chip8Interpreter {
     pub fn new() -> Self {
@@ -48,6 +50,8 @@ impl Chip8Interpreter {
             keyboard: [false; 16],
             total_dt: 0,
             total_dt2: 0,
+            debug: 0,
+            debug_iter: 0,
         }
     }
     pub fn update_key(&mut self, position: usize, state: bool) {
@@ -55,6 +59,9 @@ impl Chip8Interpreter {
     }
     pub fn should_beep(&self) -> bool {
         self.sound_timer > 0
+    }
+    pub fn set_debug(&mut self, value: u8) {
+        self.debug = value;
     }
     // Given a path to a file, load it into memory and execute it
     pub fn load_rom(&mut self, f: PathBuf) -> Result<(), Error> {
@@ -122,9 +129,28 @@ impl Chip8Interpreter {
             let mem = [self.memory[location], self.memory[location + 1]];
             u16::from_be_bytes(mem)
         };
+
         self.program_counter += 2;
 
+        self.debug(opcode);
+
         self.handle_opcode(opcode);
+    }
+    
+    fn debug(&mut self, opcode: u16) {
+        self.debug_iter = self.debug_iter.wrapping_add(1);
+        if self.debug > 0 {
+            println!("[NEW ITERATION: {}]", self.debug_iter);
+            println!("Registers: {:?}", self.registers);
+            println!("Stack: {:?}", self.stack);
+            println!("Instruction: {:#4x}", opcode);
+            println!("Instruction ptr: {}", self.program_counter);
+            println!("Address: {}", self.address);
+        }
+        if self.debug > 1 {
+            println!("VRAM: {:?}", self.vram);
+            println!("Memory: {:?}", self.memory)
+        }
     }
 }
 

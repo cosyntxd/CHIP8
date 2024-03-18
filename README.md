@@ -42,7 +42,7 @@ This is done through a virtual machine:
 - [BUILDING A CHIP-8 EMULATOR [C++]](https://austinmorlan.com/posts/chip8_emulator/)
 - [Wikipedia](https://en.wikipedia.org/wiki/CHIP-8)
 
-To compare your own code against this one, launch with the `-d <LEVEL>` option (1-4) to get a log of everything that is happening
+To compare your own code against this one, launch with the `-d <LEVEL>` option (1-2) to get a log of the internal state of the emulator. It is recommended to redirect stdout to a file.
 
 # Licence
 Do as you please with this project, see [LICENSE](LICENSE) for details.

@@ -1,3 +1,5 @@
+use std::{env, path::{Path, PathBuf}};
+
 use chip8::{chip8::Chip8Interpreter, window::Chip8Window};
 use winit::event::{ElementState, Event, VirtualKeyCode as VKC, WindowEvent};
 
@@ -11,6 +13,23 @@ const CONTROLS: [VKC; 16] = [
 fn main() {
     let window = Chip8Window::new();
     let mut interpreter = Chip8Interpreter::new();
+
+    // Process both optional cli args of: chip8 <PATH> -d <LEVEL>
+    let args: Vec<String> = env::args().collect();
+    if let Some(file) = args.get(0) {
+        if Path::new(file).is_file() {
+            if let Err(e) = interpreter.load_rom(PathBuf::from(file)) {
+                println!("Could not load ROM: {e}");
+            }
+        }
+    }
+    if let Some(debug) = args.iter().position(|arg| arg == "-d") {
+        let level = args.get(debug+1)
+            .and_then(|val| val.parse().ok())
+            .unwrap_or(0);
+        interpreter.set_debug(level)
+    }
+
     let mut iterations = 1;
     window.run(move |event, pixels| {
         if let Event::WindowEvent { event: WindowEvent::DroppedFile(path), .. } = event {
