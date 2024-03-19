@@ -60,12 +60,22 @@ impl Chip8Interpreter {
     pub fn should_beep(&self) -> bool {
         self.sound_timer > 0
     }
+    // Sets the level of logging based on args
     pub fn set_debug(&mut self, value: u8) {
         self.debug = value;
+        // Deterministic when debugging
+        self.rng = Rng::with_seed(0);
+        println!("debug set: {}", value);
     }
     // Given a path to a file, load it into memory and execute it
     pub fn load_rom(&mut self, f: PathBuf) -> Result<(), Error> {
+        let debug = self.debug;
         *self = Self::new();
+        // Preserve debug value
+        if debug > 0 {
+            self.debug = debug;
+            println!("Loading: {f:?}");
+        }
         let mut file = File::open(f)?;
         file.read(&mut self.memory[0x200..])?;
         self.should_execute = true;
@@ -136,7 +146,7 @@ impl Chip8Interpreter {
 
         self.handle_opcode(opcode);
     }
-    
+
     fn debug(&mut self, opcode: u16) {
         self.debug_iter = self.debug_iter.wrapping_add(1);
         if self.debug > 0 {

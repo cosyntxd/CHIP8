@@ -14,20 +14,22 @@ fn main() {
     let window = Chip8Window::new();
     let mut interpreter = Chip8Interpreter::new();
 
-    // Process both optional cli args of: chip8 <PATH> -d <LEVEL>
+    // CLI args of: chip8 <PATH> -d <LEVEL>
     let args: Vec<String> = env::args().collect();
-    if let Some(file) = args.get(0) {
-        if Path::new(file).is_file() {
-            if let Err(e) = interpreter.load_rom(PathBuf::from(file)) {
-                println!("Could not load ROM: {e}");
-            }
-        }
-    }
+    // Process debug first to immediately begin logging
     if let Some(debug) = args.iter().position(|arg| arg == "-d") {
         let level = args.get(debug+1)
             .and_then(|val| val.parse().ok())
             .unwrap_or(0);
         interpreter.set_debug(level)
+    }
+    // Now when loading rom from args, there will be logs 
+    if let Some(file) = args.get(1) {
+        if Path::new(file).is_file() {
+            if let Err(e) = interpreter.load_rom(PathBuf::from(file)) {
+                println!("Could not load ROM: {e}");
+            }
+        }
     }
 
     let mut iterations = 1;
