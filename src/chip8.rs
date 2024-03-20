@@ -91,7 +91,7 @@ impl Chip8Interpreter {
         for byte in 0..n {
             let y = (self.registers[y] as usize + byte) % HEIGHT;
             for bit in 0..8 {
-                let x = (self.registers[x] + bit) as usize % WIDTH;
+                let x = (self.registers[x] as usize + bit as usize) % WIDTH;
                 let color = (self.memory[self.address as usize + byte] >> (7 - bit)) & 1;
                 self.registers[0x0f] |= color & self.vram[y * WIDTH + x] as u8;
                 self.vram[y * WIDTH + x] ^= color != 0;

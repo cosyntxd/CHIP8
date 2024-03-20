@@ -2,7 +2,11 @@
 A fairly simple emulator for CHIP-8 interpreted programming language written in Rust
 
 # About
-This is not meant to be very fancy emulator. Its written as practice with the Rust language as well as being my first introduction into innerworkings of languages and CPUs. I wrote most of this code following [this](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM) spec sheet with readability in mind. 
+This is not meant to be very fancy emulator. Its written as practice with the Rust language as well as being my first introduction into innerworkings of languages and CPUs. I wrote most of this code following [this](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM) spec sheet with readability in mind.
+
+<p align="center">
+  <img src="README_PREVIEW.png" alt="Program running pong"/>
+</p>
 
 # Running
 Should be able to run on most systems, simply run the following commands
@@ -13,7 +17,7 @@ cargo run --release
 ```
 # Roms
 This is only an emulator, see list of ROMs for CHIP8 [here](https://github.com/loktar00/chip8/tree/master/roms).
-Either launch the program with the option `-r <FILE>.ch8` or drag and drop the file in the window.
+Specify the target ROM by either dragging and dropping the file into the window or running with `chip8 <FILE>`
 
 # About CHIP-8
 Read about it [here](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#0.0):
