@@ -6,8 +6,9 @@ use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
 };
-
 use crate::chip8::{HEIGHT, WIDTH};
+
+/// An easy way to interact with window, pixel buffer and audio
 pub struct Chip8Window {
     surface: Pixels,
     window: Window,

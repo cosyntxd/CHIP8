@@ -54,20 +54,22 @@ impl Chip8Interpreter {
             debug_iter: 0,
         }
     }
+
     pub fn update_key(&mut self, position: usize, state: bool) {
         self.keyboard[position] = state;
     }
+
     pub fn should_beep(&self) -> bool {
         self.sound_timer > 0
     }
-    // Sets the level of logging based on args
+    /// Sets the level of logging based on args
     pub fn set_debug(&mut self, value: u8) {
         self.debug = value;
         // Deterministic when debugging
         self.rng = Rng::with_seed(0);
         println!("debug set: {}", value);
     }
-    // Given a path to a file, load it into memory and execute it
+    /// Given a path to a file, load it into memory and execute it
     pub fn load_rom(&mut self, f: PathBuf) -> Result<(), Error> {
         let debug = self.debug;
         *self = Self::new();
@@ -82,11 +84,11 @@ impl Chip8Interpreter {
         Ok(())
     }
 
-    pub fn clear_display(&mut self) {
+    fn clear_display(&mut self) {
         self.vram = [false; WIDTH * HEIGHT];
     }
-
-    pub fn draw_sprite(&mut self, x: usize, y: usize, n: usize) {
+    /// Draws sprite to screen, see Dxyn instruction for info
+    fn draw_sprite(&mut self, x: usize, y: usize, n: usize) {
         self.registers[0xf] = 0;
         for byte in 0..n {
             let y = (self.registers[y] as usize + byte) % HEIGHT;
@@ -98,6 +100,7 @@ impl Chip8Interpreter {
             }
         }
     }
+    /// Redraws to pixel buffer at every frame
     pub fn draw_pixels(&mut self, pixels: &mut [u8]) {
         debug_assert!(pixels.len() == HEIGHT * WIDTH * 4);
         for y in 0..HEIGHT {
@@ -111,7 +114,8 @@ impl Chip8Interpreter {
             }
         }
     }
-    pub fn update_timer(&mut self) {
+    /// Updates all timers
+    fn update_timer(&mut self) {
         const TIMER_PERIOD: u16 = 1;
         if self.delay_timer > 0 {
             self.total_dt += TIMER_PERIOD;
@@ -128,6 +132,7 @@ impl Chip8Interpreter {
             }
         }
     }
+    /// Fetches, decodes, and executes the instruction as well as updates timers
     pub fn execute_cycle(&mut self) {
         if !self.should_execute {
             return;
@@ -147,6 +152,7 @@ impl Chip8Interpreter {
         self.handle_opcode(opcode);
     }
 
+    /// Outputs important information for debugging, use `-d <LEVEL>` when running to enable
     fn debug(&mut self, opcode: u16) {
         self.debug_iter = self.debug_iter.wrapping_add(1);
         if self.debug > 0 {
@@ -162,16 +168,16 @@ impl Chip8Interpreter {
             println!("Memory: {:?}", self.memory)
         }
     }
-}
-
-impl Chip8Interpreter {
+    /// Decodes and executes instruction
     pub fn handle_opcode(&mut self, opcode: u16) {
         let x = ((opcode & 0x0F00) >> 8) as usize;
         let y = ((opcode & 0x00F0) >> 4) as usize;
         let byte = opcode & 0x00FF;
         let address = opcode & 0x07FF;
         let nimble = opcode & 0x000F;
-
+        // Matches opcode from this macro, code defined in `chip8-macros/lib`
+        // See references in readme for more information about each instruction
+        // x and y in name match with variables, kk for byte, n for nimble, nnn for address
         opcode_handler!(opcode
             "00e0" => {
                 self.clear_display()
@@ -273,10 +279,10 @@ impl Chip8Interpreter {
                 self.registers[x] = self.delay_timer;
             },
             "Fx0A" => {
-                // TODO: use keydown event and make nicer
-                if self.keyboard.iter().any(|x| *x) {
-                    self.registers[x as usize] = self.keyboard.iter().position(|x| *x).unwrap() as u8;
+                if let Some(key) = self.keyboard.iter().position(|x| *x) {
+                    self.registers[x] = key as u8;
                 } else {
+                    // Rerun this instruction
                     self.program_counter -= 2;
                 }
             },

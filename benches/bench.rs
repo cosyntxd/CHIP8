@@ -1,6 +1,6 @@
-use std::{path::PathBuf, time::Duration};
-use std::fs;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
+use std::fs;
+use std::{path::PathBuf, time::Duration};
 
 fn general_bench(c: &mut Criterion) {
     for path in fs::read_dir("roms").unwrap() {

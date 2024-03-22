@@ -3,6 +3,7 @@ use std::{env, path::{Path, PathBuf}};
 use chip8::{chip8::Chip8Interpreter, window::Chip8Window};
 use winit::event::{ElementState, Event, VirtualKeyCode as VKC, WindowEvent};
 
+// Hexademical keyboard remapped to qwerty
 const CONTROLS: [VKC; 16] = [
     VKC::Key1, VKC::Key2, VKC::Key3, VKC::Key4,
     VKC::Q,    VKC::W,    VKC::E,    VKC::R,
@@ -34,12 +35,13 @@ fn main() {
 
     let mut iterations = 1;
     window.run(move |event, pixels| {
+        // Drag and drop file
         if let Event::WindowEvent { event: WindowEvent::DroppedFile(path), .. } = event {
             if let Err(e) = interpreter.load_rom(path.to_path_buf()) {
                 println!("Could not load ROM: {e}");
             }
         }
-
+        // Keyboard input
         if let Event::WindowEvent { event, .. } = event {
             if let WindowEvent::KeyboardInput { input, .. } = event {
                 if let Some(key) = input.virtual_keycode {
@@ -50,6 +52,7 @@ fn main() {
                         };
                         interpreter.update_key(position, state);
                     } else {
+                        // Speed up or slow down
                         if (key == VKC::Minus) && iterations > 0 {
                             iterations -= 1;
                         }
@@ -62,6 +65,7 @@ fn main() {
         }
         
         if let Event::RedrawRequested(_) = event {
+            // Can run multiple iterations/cycles per frame
             for _ in 0..iterations {
                 interpreter.execute_cycle();
             }

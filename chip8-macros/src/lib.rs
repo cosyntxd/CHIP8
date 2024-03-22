@@ -75,6 +75,7 @@ impl OperationsHolder {
     }
 }
 #[proc_macro]
+/// Easy way to specify the opcode and generate statements to test which opcode an instruction matches
 pub fn opcode_handler(input: TokenStream) -> TokenStream {
     let operations = parse_macro_input!(input as OperationsHolder);
     operations.generate().into()
