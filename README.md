@@ -8,16 +8,9 @@ This is not meant to be very fancy emulator. Its written as practice with the Ru
   <img src="README_PREVIEW.png" alt="Program running pong"/>
 </p>
 
-# Running
-Should be able to run on most systems, simply run the following commands
-```
-git clone https://github.com/cosyntxd/CHIP8
-cd CHIP8
-cargo run --release
-```
 # Roms
-This is only an emulator, see list of ROMs for CHIP8 [here](https://github.com/loktar00/chip8/tree/master/roms).
-Specify the target ROM by either dragging and dropping the file into the window or running with `chip8 <FILE>`
+This is only an emulator and does not have any games it can run. See list of ROMs for CHIP8 [here](https://github.com/loktar00/chip8/tree/master/roms) to use for this emulator.
+Specify the target ROM by either dragging and dropping the file into the window or running with `./chip8 <FILE>`
 
 # About CHIP-8
 Read about it [here](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#0.0):
