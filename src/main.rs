@@ -1,15 +1,6 @@
 use std::{env, path::{Path, PathBuf}};
 
-use chip8::{chip8::Chip8Interpreter, window::Chip8Window};
-use winit::event::{ElementState, Event, VirtualKeyCode as VKC, WindowEvent};
-
-// Hexademical keyboard remapped to qwerty
-const CONTROLS: [VKC; 16] = [
-    VKC::Key1, VKC::Key2, VKC::Key3, VKC::Key4,
-    VKC::Q,    VKC::W,    VKC::E,    VKC::R,
-    VKC::A,    VKC::S,    VKC::D,    VKC::F,
-    VKC::Z,    VKC::X,    VKC::C,    VKC::V,
-];
+use chip8::{chip8::Chip8Interpreter, window::{Chip8Window, GameEvents, MINUS_POSITION, PLUS_POSITION}};
 
 fn main() {
     let window = Chip8Window::new();
@@ -33,45 +24,38 @@ fn main() {
         }
     }
 
-    let mut iterations = 1;
+    
+    let mut iteration_speed = 1;
     window.run(move |event, pixels| {
-        // Drag and drop file
-        if let Event::WindowEvent { event: WindowEvent::DroppedFile(path), .. } = event {
-            if let Err(e) = interpreter.load_rom(path.to_path_buf()) {
-                println!("Could not load ROM: {e}");
-            }
-        }
-        // Keyboard input
-        if let Event::WindowEvent { event, .. } = event {
-            if let WindowEvent::KeyboardInput { input, .. } = event {
-                if let Some(key) = input.virtual_keycode {
-                    if let Some(position) = CONTROLS.iter().position(|k| k == &key) {
-                        let state = match input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                        interpreter.update_key(position, state);
-                    } else {
-                        // Speed up or slow down
-                        if (key == VKC::Minus) && iterations > 0 {
-                            iterations -= 1;
-                        }
-                        if (key == VKC::Equals) && iterations < 1000 {
-                            iterations += 1;
-                        }
-                    }
+        match event {
+            GameEvents::DroppedFile(path_buf) => {
+                if let Err(e) = interpreter.load_rom(path_buf) {
+                    println!("Could not load ROM: {e}");
                 }
-            }
+            },
+            GameEvents::KeyInput(position, state) => {
+                if position < 16 {
+                    interpreter.update_key(position, state);
+                } else {
+                    if (position == MINUS_POSITION) && iteration_speed > 0 {
+                        iteration_speed -= 1;
+                    }
+
+                    if (position == PLUS_POSITION) && iteration_speed < 250 {
+                        iteration_speed += 1;
+                    }
+                    assert!(iteration_speed > 0 && iteration_speed < 250);
+                }
+                
+            },
+            GameEvents::Redraw => {
+                for _ in 0..iteration_speed {
+                    interpreter.execute_cycle();
+                }
+                interpreter.draw_pixels(pixels);
+                return interpreter.should_beep();
+            },
         }
-        
-        if let Event::RedrawRequested(_) = event {
-            // Can run multiple iterations/cycles per frame
-            for _ in 0..iterations {
-                interpreter.execute_cycle();
-            }
-            interpreter.draw_pixels(pixels);
-            return interpreter.should_beep();
-        }
-        return false;
+        false
     });
 }
