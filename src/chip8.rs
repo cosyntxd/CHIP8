@@ -31,6 +31,7 @@ pub struct Chip8Interpreter {
     debug: u8,
     debug_iter: u32,
 }
+
 impl Chip8Interpreter {
     pub fn new() -> Self {
         let mut mem = [0; 4096];
@@ -54,7 +55,7 @@ impl Chip8Interpreter {
             debug_iter: 0,
         }
     }
-
+    
     pub fn update_key(&mut self, position: usize, state: bool) {
         self.keyboard[position] = state;
     }
@@ -110,7 +111,7 @@ impl Chip8Interpreter {
                     false => PIXEL_OFF,
                 };
                 let index = (y * WIDTH + x) * 4;
-                pixels[index..index + 4].copy_from_slice(&state);
+                pixels[index..index + 4].copy_from_slice(state);
             }
         }
     }
@@ -304,13 +305,13 @@ impl Chip8Interpreter {
                 self.memory[self.address as usize + 2] = self.registers[x] % 10;
             },
             "Fx55" => {
-                let mem = &mut self.memory[address as usize..address as usize + x as usize];
-                mem.copy_from_slice(&self.registers[0..x as usize]);
+                let mem = &mut self.memory[address as usize..address as usize + x];
+                mem.copy_from_slice(&self.registers[0..x]);
                 self.address += (x + 1) as u16;
             },
             "Fx65" => {
-                let mem = &mut self.memory[address as usize..address as usize + x as usize];
-                self.registers[0..x as usize].copy_from_slice(&mem);
+                let mem = &mut self.memory[address as usize..address as usize + x];
+                self.registers[0..x].copy_from_slice(mem);
                 self.address += (x + 1) as u16;
             }
         );
