@@ -76,10 +76,14 @@ impl Chip8Window {
                 control_flow.set_exit();
             }
             
-            if let Event::WindowEvent { event: WindowEvent::Resized(size), .. } = event {
+            if let Event::WindowEvent { event: WindowEvent::Resized(mut size), .. } = event {
+                if size.width == 0xFFFFFFFF {
+                    size = self.window.inner_size();
+                }
                 self.surface
                     .resize_surface(size.width, size.height)
                     .expect("Could not resize surface");
+                
             }
 
             if let Event::WindowEvent { event: WindowEvent::DroppedFile(path), .. } = &event {

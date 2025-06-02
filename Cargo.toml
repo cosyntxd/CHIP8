@@ -8,10 +8,10 @@ license = "Unlicense"
 
 [dependencies]
 fastrand = "2.0"
-pixels = "0.13"
 winit = "0.27" # https://github.com/parasyte/pixels/issues/379
 opcode_macros = { path = "chip8-macros"}
 rodio = "0.11.0"
+pixels = "0.14.0"
 
 [dev-dependencies]
 criterion = "0.4"
