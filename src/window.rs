@@ -10,6 +10,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use crate::chip8::{HEIGHT, WIDTH};
+use std::io::Write;
 
 /// An easy way to interact with window, pixel buffer and audio
 pub struct Chip8Window {
@@ -92,16 +93,16 @@ impl Chip8Window {
             if let Event::WindowEvent { ref event, .. } = event {
                 if let WindowEvent::KeyboardInput { input, .. } = event {
                     if let Some(key) = input.virtual_keycode {
-                        println!("{key:?}");
                         if let Some(position) = CONTROLS.iter().position(|k| k == &key) {
                             let state = match input.state {
                                 ElementState::Pressed => true,
                                 ElementState::Released => false,
                             };
-                            println!("{position}");
                             func(GameEvents::KeyInput(position, state), self.surface.frame_mut());
                         } else {
-                            // TODO: user feedback
+                            // BEL character usually makes a boop sound
+                            print!("\x07");
+                            std::io::stdout().flush().unwrap();
                         }
                     }
                 }
